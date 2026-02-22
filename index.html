@@ -18,7 +18,6 @@
       --primary:#111827;
       --danger:#b91c1c;
       --ok:#065f46;
-      --warn:#92400e;
       --radius:14px;
     }
     *{ box-sizing:border-box; }
@@ -83,9 +82,7 @@
     textarea{ min-height:84px; resize:vertical; }
 
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .pill-group{
-      display:flex; gap:8px; flex-wrap:wrap;
-    }
+    .pill-group{ display:flex; gap:8px; flex-wrap:wrap; }
     .pill{
       border:1px solid var(--line);
       background:#fff;
@@ -97,9 +94,7 @@
     }
     .pill[data-on="1"]{ background:var(--primary); color:#fff; border-color:var(--primary); }
 
-    .status{
-      display:flex; gap:6px; flex-wrap:wrap;
-    }
+    .status{ display:flex; gap:6px; flex-wrap:wrap; }
     .mini{
       padding:7px 10px; border-radius:999px; cursor:pointer;
       border:1px solid var(--line); background:#fff; font-size:12px;
@@ -128,16 +123,8 @@
       cursor:pointer;
       font-size:14px;
     }
-    .btn.primary{
-      background:var(--primary);
-      color:#fff;
-      border-color:var(--primary);
-    }
-    .btn.danger{
-      background:var(--danger);
-      color:#fff;
-      border-color:var(--danger);
-    }
+    .btn.primary{ background:var(--primary); color:#fff; border-color:var(--primary); }
+    .btn.danger{ background:var(--danger); color:#fff; border-color:var(--danger); }
     .btn:disabled{ opacity:.55; cursor:not-allowed; }
     .right{ display:flex; gap:10px; align-items:center; }
 
@@ -157,9 +144,7 @@
     .item-head b{ font-size:14px; }
     .item-head small{ color:var(--muted); }
     .actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-    .thumbs{
-      display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
-    }
+    .thumbs{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .thumb{
       width:70px; height:70px; object-fit:cover;
       border-radius:10px; border:1px solid var(--line);
@@ -221,7 +206,7 @@
 </header>
 
 <div class="wrap">
-  <!-- STEP 0 (home/info) -->
+  <!-- HOME -->
   <div id="screenHome" class="card">
     <h2>Como funciona</h2>
     <p class="help">
@@ -233,9 +218,6 @@
       <button class="btn primary" id="btnStart">Iniciar vistoria</button>
       <button class="btn" id="btnClearDraft">Limpar rascunho</button>
     </div>
-    <p class="help" style="margin-top:10px">
-      Dica: Não esqueça de gerar PDF ao final
-    </p>
   </div>
 
   <!-- STEP 1 -->
@@ -333,6 +315,21 @@
           <input id="vehicleKeys" inputmode="numeric" placeholder="Ex: 2" />
         </div>
       </div>
+
+      <div class="grid two" style="margin-top:10px">
+        <div>
+          <label>Câmbio (opcional)</label>
+          <select id="vehicleTransmission">
+            <option value="">Selecione...</option>
+            <option>Manual</option>
+            <option>Automático</option>
+          </select>
+        </div>
+        <div>
+          <label style="visibility:hidden">-</label>
+          <div style="height:40px"></div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -407,7 +404,7 @@
       </div>
       <div style="margin-top:10px" id="damageList" class="list"></div>
       <p class="help" style="margin-top:10px">
-        Dica: tire ao menos 1 foto por dano. No PDF, as fotos entram em páginas adicionais.
+        Limite: até <b>15 fotos por dano</b>. No PDF, as fotos entram em páginas adicionais.
       </p>
     </div>
   </div>
@@ -545,7 +542,7 @@
       <div class="card" style="background:#fff;">
         <div class="row" style="justify-content:space-between; align-items:center;">
           <b style="font-size:14px;">Fotos do dano</b>
-          <label class="btn" style="display:inline-flex; align-items:center; gap:8px; margin:0;">
+          <label class="btn" id="btnAddDamagePhoto" style="display:inline-flex; align-items:center; gap:8px; margin:0;">
             Adicionar foto
             <input id="damagePhotoInput" type="file" accept="image/*" capture="environment" style="display:none" multiple />
           </label>
@@ -560,8 +557,6 @@
       </div>
     </div>
   </div>
-
-  <!-- hidden file input for import -->
 </div>
 
 <div class="footerbar">
@@ -575,6 +570,15 @@
 </div>
 
 <script>
+/* -----------------------------
+   Settings
+------------------------------ */
+const SETTINGS = {
+  maxDamagePhotos: 15,    // limite máximo de fotos por dano
+  photoMaxWidth: 1280,
+  photoQuality: 0.72
+};
+
 /* -----------------------------
    State & Defaults
 ------------------------------ */
@@ -600,13 +604,6 @@ const GENERAL_PHOTO_SLOTS = [
   { key:"porta_malas", label:"Porta-malas" }
 ];
 
-  const SETTINGS = {
-  maxDamagePhotos: 4,      // <-- ajuste aqui (ex.: 3, 4, 5)
-  maxGeneralPhotos: 8,     // opcional: limite total de fotos gerais (slots já são 8)
-  photoMaxWidth: 1200,     // reduzir um pouco ajuda no tamanho do PDF
-  photoQuality: 0.70       // reduzir qualidade também ajuda
-};
-  
 function nowAsDatetimeLocal(){
   const d = new Date();
   const pad = n => String(n).padStart(2,"0");
@@ -657,7 +654,8 @@ function blankState(){
       color:"",
       odometer:"",
       fuelLevel:"",
-      keys:""
+      keys:"",
+      transmission:""
     },
     client:{
       name:"",
@@ -705,34 +703,22 @@ const progressFill = $("#progressFill");
 
 function showStep(step){
   currentStep = step;
-  // hide all
   screenHome.classList.toggle("hidden", step !== 0);
   for (const k of [1,2,3,4,5]) screens[k].classList.add("hidden");
   if (step>=1 && step<=5) screens[step].classList.remove("hidden");
 
-  // footer label + buttons
-  const labels = {
-    0:"Início",
-    1:"Etapa 1/5",
-    2:"Etapa 2/5",
-    3:"Etapa 3/5",
-    4:"Etapa 4/5",
-    5:"Etapa 5/5"
-  };
+  const labels = { 0:"Início", 1:"Etapa 1/5", 2:"Etapa 2/5", 3:"Etapa 3/5", 4:"Etapa 4/5", 5:"Etapa 5/5" };
   stepLabel.textContent = labels[step] || "";
 
   btnBack.disabled = (step === 0);
   btnNext.classList.toggle("hidden", step === 5);
   btnNext.textContent = (step === 0) ? "Iniciar" : "Próximo";
 
-  // progress
   const pct = step === 0 ? 0 : (step/5)*100;
   progressFill.style.width = pct + "%";
 
-  // conditional rental extras
   $("#rentalExtras").classList.toggle("hidden", state.meta.opType !== "Locação");
 
-  // review
   if (step === 5) renderReview();
 
   saveDraft();
@@ -746,18 +732,13 @@ function toast(msg){
    Save/Load draft
 ------------------------------ */
 function saveDraft(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }catch(e){
-    // ignore
-  }
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
 }
 function loadDraft(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
-    const parsed = JSON.parse(raw);
-    state = parsed;
+    state = JSON.parse(raw);
     return true;
   }catch(e){
     return false;
@@ -768,7 +749,7 @@ function clearDraft(){
 }
 
 /* -----------------------------
-   Pills for type/moment
+   Pills
 ------------------------------ */
 function buildPills(container, values, getter, setter){
   container.innerHTML = "";
@@ -779,9 +760,7 @@ function buildPills(container, values, getter, setter){
     el.dataset.on = getter() === v ? "1" : "0";
     el.addEventListener("click", () => {
       setter(v);
-      // rerender
       buildPills(container, values, getter, setter);
-      // update conditional blocks
       $("#rentalExtras").classList.toggle("hidden", state.meta.opType !== "Locação");
       saveDraft();
     });
@@ -802,6 +781,7 @@ function renderChecklist(){
         <b>${sec.section}</b>
         <small>${sec.items.length} itens</small>
       </div>`;
+
     const inner = document.createElement("div");
     inner.style.marginTop = "10px";
     inner.style.display = "flex";
@@ -832,6 +812,7 @@ function renderChecklist(){
         });
         return b;
       };
+
       status.appendChild(makeBtn("OK","OK","ok"));
       status.appendChild(makeBtn("Não OK","NOK","bad"));
       status.appendChild(makeBtn("N/A","NA","na"));
@@ -839,6 +820,7 @@ function renderChecklist(){
       row.appendChild(status);
       inner.appendChild(row);
     }
+
     secCard.appendChild(inner);
     wrap.appendChild(secCard);
   }
@@ -847,7 +829,7 @@ function renderChecklist(){
 /* -----------------------------
    Photos: compress to base64 jpg
 ------------------------------ */
-async function fileToCompressedJpegBase64(file, maxW=1280, quality=0.72){
+async function fileToCompressedJpegBase64(file, maxW=SETTINGS.photoMaxWidth, quality=SETTINGS.photoQuality){
   const img = await new Promise((res, rej) => {
     const i = new Image();
     i.onload = () => res(i);
@@ -904,7 +886,6 @@ function renderGeneralPhotos(){
     wrap.appendChild(card);
   }
 
-  // bind inputs
   wrap.querySelectorAll('input[type="file"][data-photo-slot]').forEach(inp => {
     inp.addEventListener("change", async (e) => {
       const key = e.target.dataset.photoSlot;
@@ -923,7 +904,6 @@ function renderGeneralPhotos(){
     });
   });
 
-  // bind clear buttons
   wrap.querySelectorAll("button[data-clear-photo]").forEach(btn => {
     btn.addEventListener("click", () => {
       const key = btn.dataset.clearPhoto;
@@ -994,13 +974,6 @@ function openDamageModal(id=null){
   const thumbs = $("#damagePhotoThumbs");
   thumbs.innerHTML = "";
 
-  const limitInfo = document.createElement("div");
-limitInfo.style.color = "var(--muted)";
-limitInfo.style.fontSize = "12px";
-limitInfo.style.marginBottom = "8px";
-limitInfo.textContent = `Fotos: ${photos.length}/${SETTINGS.maxDamagePhotos}`;
-thumbs.appendChild(limitInfo);
-  
   if (!id){
     title.textContent = "Adicionar dano";
     $("#damageArea").value = "";
@@ -1018,6 +991,7 @@ thumbs.appendChild(limitInfo);
     thumbs.dataset.photos = JSON.stringify(d.photos || []);
     renderDamageThumbs();
   }
+  renderDamageThumbs();
 }
 
 function closeDamageModal(){
@@ -1029,7 +1003,16 @@ function closeDamageModal(){
 function renderDamageThumbs(){
   const thumbs = $("#damagePhotoThumbs");
   const photos = JSON.parse(thumbs.dataset.photos || "[]");
+
   thumbs.innerHTML = "";
+
+  const info = document.createElement("div");
+  info.style.color = "var(--muted)";
+  info.style.fontSize = "12px";
+  info.style.marginBottom = "8px";
+  info.textContent = `Fotos: ${photos.length}/${SETTINGS.maxDamagePhotos}`;
+  thumbs.appendChild(info);
+
   for (let i=0;i<photos.length;i++){
     const wrap = document.createElement("div");
     wrap.style.display = "flex";
@@ -1055,6 +1038,14 @@ function renderDamageThumbs(){
     wrap.appendChild(img);
     wrap.appendChild(del);
     thumbs.appendChild(wrap);
+  }
+
+  const addBtn = $("#btnAddDamagePhoto");
+  if (addBtn){
+    const atLimit = photos.length >= SETTINGS.maxDamagePhotos;
+    addBtn.style.opacity = atLimit ? "0.55" : "1";
+    addBtn.style.pointerEvents = atLimit ? "none" : "auto";
+    addBtn.title = atLimit ? `Limite: ${SETTINGS.maxDamagePhotos} fotos por dano` : "";
   }
 }
 
@@ -1126,28 +1117,27 @@ $("#damageModal").addEventListener("click", (e) => {
 });
 
 /* -----------------------------
-   Signature pads (simple)
+   Signature pads
 ------------------------------ */
-function setupSignature(canvasId, getSetter){
+function setupSignature(canvasId, setFn){
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext("2d");
   let drawing = false;
   let last = null;
 
   function resize(){
-    // keep internal resolution for crisp lines
     const rect = canvas.getBoundingClientRect();
     const ratio = Math.max(1, window.devicePixelRatio || 1);
     const w = Math.round(rect.width * ratio);
     const h = Math.round(rect.height * ratio);
-    const img = canvas.toDataURL("image/png"); // preserve if any
+    const img = canvas.toDataURL("image/png");
     canvas.width = w; canvas.height = h;
     ctx.setTransform(1,0,0,1,0,0);
     ctx.scale(ratio, ratio);
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
     ctx.strokeStyle = "#111827";
-    // restore previous image (best-effort)
+
     const temp = new Image();
     temp.onload = () => ctx.drawImage(temp, 0, 0, rect.width, rect.height);
     temp.src = img;
@@ -1161,11 +1151,7 @@ function setupSignature(canvasId, getSetter){
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  function down(evt){
-    evt.preventDefault();
-    drawing = true;
-    last = getPos(evt);
-  }
+  function down(evt){ evt.preventDefault(); drawing = true; last = getPos(evt); }
   function move(evt){
     if (!drawing) return;
     evt.preventDefault();
@@ -1180,9 +1166,7 @@ function setupSignature(canvasId, getSetter){
     if (!drawing) return;
     drawing = false;
     last = null;
-    // save signature
-    const data = canvas.toDataURL("image/png");
-    getSetter(data);
+    setFn(canvas.toDataURL("image/png"));
     saveDraft();
   }
 
@@ -1201,7 +1185,7 @@ function setupSignature(canvasId, getSetter){
     clear(){
       const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0,0,rect.width,rect.height);
-      getSetter(null);
+      setFn(null);
       saveDraft();
     },
     load(dataUrl){
@@ -1237,6 +1221,7 @@ function bindInputs(){
   $("#vehicleOdometer").addEventListener("input", e => { state.vehicle.odometer = e.target.value; saveDraft(); });
   $("#vehicleFuelLevel").addEventListener("input", e => { state.vehicle.fuelLevel = e.target.value; saveDraft(); });
   $("#vehicleKeys").addEventListener("input", e => { state.vehicle.keys = e.target.value; saveDraft(); });
+  $("#vehicleTransmission").addEventListener("input", e => { state.vehicle.transmission = e.target.value; saveDraft(); });
 
   $("#clientName").addEventListener("input", e => { state.client.name = e.target.value; saveDraft(); });
   $("#clientDoc").addEventListener("input", e => { state.client.doc = e.target.value; saveDraft(); });
@@ -1255,7 +1240,6 @@ function bindInputs(){
   $("#acceptTerms").addEventListener("change", e => { state.acceptTerms = e.target.checked; saveDraft(); });
   $("#clientSignerName").addEventListener("input", e => { state.clientSignerName = e.target.value; saveDraft(); });
 
-  // signature clear buttons
   document.querySelectorAll("button[data-clear-sig]").forEach(btn => {
     btn.addEventListener("click", () => {
       const which = btn.dataset.clearSig;
@@ -1266,7 +1250,7 @@ function bindInputs(){
 }
 
 /* -----------------------------
-   Validation per step
+   Validation
 ------------------------------ */
 function requireVal(v){ return (v ?? "").toString().trim().length > 0; }
 
@@ -1285,7 +1269,6 @@ function validateStep(step){
     if (!requireVal(state.client.name)) return "Preencha o nome do cliente/parte.";
   }
   if (step === 4){
-    // photos recommended: require at least 5 of 8? keep simple: require at least 4 + painel/KM
     const hasPanel = !!state.generalPhotos["painel_km"];
     const count = Object.values(state.generalPhotos).filter(Boolean).length;
     if (!hasPanel) return "Adicione a foto do Painel / KM.";
@@ -1305,16 +1288,19 @@ function esc(s){
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[c]));
 }
+
 function renderReview(){
   const div = $("#reviewCard");
   const meta = state.meta, v = state.vehicle, c = state.client;
 
   const checklistSummary = (() => {
     const vals = Object.values(state.checklist);
-    const ok = vals.filter(x => x==="OK").length;
-    const nok = vals.filter(x => x==="NOK").length;
-    const na = vals.filter(x => x==="NA").length;
-    return {ok,nok,na,total:vals.length};
+    return {
+      ok: vals.filter(x => x==="OK").length,
+      nok: vals.filter(x => x==="NOK").length,
+      na: vals.filter(x => x==="NA").length,
+      total: vals.length
+    };
   })();
 
   const photosCount = Object.values(state.generalPhotos).filter(Boolean).length;
@@ -1345,6 +1331,7 @@ function renderReview(){
           <div><b style="color:var(--text)">Modelo:</b> ${esc(v.model)}</div>
           <div><b style="color:var(--text)">KM:</b> ${esc(v.odometer)} • <b style="color:var(--text)">Comb:</b> ${esc(v.fuelLevel)}</div>
           <div><b style="color:var(--text)">Chaves:</b> ${esc(v.keys || "-")}</div>
+          <div><b style="color:var(--text)">Câmbio:</b> ${esc(v.transmission || "-")}</div>
         </div>
       </div>
     </div>
@@ -1412,7 +1399,6 @@ async function generatePdf(){
 
   const meta = state.meta, v = state.vehicle, c = state.client;
 
-  // Title
   doc.setFont("helvetica","bold");
   doc.setFontSize(14);
   doc.text("VISTORIA DE VEÍCULO", margin, 16);
@@ -1439,7 +1425,8 @@ async function generatePdf(){
   doc.text(`Placa: ${v.plate}`, margin, y); y += 5;
   doc.text(`Marca/Modelo: ${v.model}`, margin, y); y += 5;
   doc.text(`Ano: ${v.year || "-"}   Cor: ${v.color || "-"}`, margin, y); y += 5;
-  doc.text(`KM: ${v.odometer}   Combustível: ${v.fuelLevel}   Chaves: ${v.keys || "-"}`, margin, y); y += 7;
+  doc.text(`KM: ${v.odometer}   Combustível: ${v.fuelLevel}   Chaves: ${v.keys || "-"}`, margin, y); y += 5;
+  doc.text(`Câmbio: ${v.transmission || "-"}`, margin, y); y += 7;
 
   doc.setFont("helvetica","bold");
   doc.text("Cliente / Parte", margin, y); y += 6;
@@ -1461,7 +1448,6 @@ async function generatePdf(){
     y = addWrappedText(doc, meta.inspectionNote, margin, y, contentW, 4.5) + 2;
   }
 
-  // Checklist summary
   doc.setFont("helvetica","bold");
   doc.text("Checklist (resumo)", margin, y); y += 6;
   doc.setFont("helvetica","normal");
@@ -1473,7 +1459,6 @@ async function generatePdf(){
 
   doc.text(`OK: ${ok}   Não OK: ${nok}   N/A: ${na}`, margin, y); y += 6;
 
-  // If space, include NOK items list
   const nokItems = [];
   for (const [k,val] of Object.entries(state.checklist)){
     if (val === "NOK") nokItems.push(k);
@@ -1486,7 +1471,6 @@ async function generatePdf(){
     y = addWrappedText(doc, text, margin, y, contentW, 4.5) + 2;
   }
 
-  // General notes
   if (state.generalNotes){
     doc.setFont("helvetica","bold");
     doc.text("Observações gerais", margin, y); y += 6;
@@ -1494,7 +1478,6 @@ async function generatePdf(){
     y = addWrappedText(doc, state.generalNotes, margin, y, contentW, 4.5) + 2;
   }
 
-  // Damages list
   doc.setFont("helvetica","bold");
   doc.text("Danos registrados", margin, y); y += 6;
   doc.setFont("helvetica","normal");
@@ -1514,7 +1497,6 @@ async function generatePdf(){
     y += 2;
   }
 
-  // Signatures
   const ensureSpace = (need) => {
     if (y + need > pageH - margin){
       doc.addPage();
@@ -1556,10 +1538,8 @@ async function generatePdf(){
     y += 5;
   }
   doc.text("Aceite: vistoria registrada conforme estado observado no momento.", margin, y);
-  y += 6;
   doc.setFontSize(10);
 
-  // Photos pages: general photos then damage photos
   const allGeneral = GENERAL_PHOTO_SLOTS
     .filter(s => !!state.generalPhotos[s.key])
     .map(s => ({ label:s.label, data:state.generalPhotos[s.key] }));
@@ -1609,14 +1589,12 @@ async function generatePdf(){
         x = margin; col = 0;
       }
 
-      // label
       doc.setFont("helvetica","bold");
       doc.setFontSize(9);
       const label = p.sub ? `${p.label} — ${p.sub}` : p.label;
       const clipped = label.length > 70 ? label.slice(0,67) + "..." : label;
       doc.text(clipped, x, y);
 
-      // image
       doc.setFont("helvetica","normal");
       doc.setFontSize(10);
       try{
@@ -1625,7 +1603,6 @@ async function generatePdf(){
         doc.text("(Falha ao inserir imagem)", x, y+10);
       }
 
-      // advance
       col++;
       if (col >= cols){
         col = 0;
@@ -1640,58 +1617,16 @@ async function generatePdf(){
   addPhotoGridPage("Fotos gerais", allGeneral);
   addPhotoGridPage("Fotos de danos", allDamagePhotos);
 
-  // Save
   doc.save(fmtFilename());
-}
-
-/* -----------------------------
-   JSON export/import
------------------------------- */
-function downloadText(filename, text, mime="application/json"){
-  const blob = new Blob([text], {type:mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 500);
-}
-
-function exportJson(){
-  const data = JSON.stringify(state, null, 2);
-  const plate = (state.vehicle.plate || "SEMPLACA").toUpperCase().replace(/\s+/g,"");
-  const dt = (state.meta.inspectionDateTime || "").replace("T","_").replace(":","");
-  const filename = `VISTORIA_${plate}_${dt}.json`;
-  downloadText(filename, data, "application/json");
-}
-
-function importJsonFile(file){
-  const reader = new FileReader();
-  reader.onload = () => {
-    try{
-      const parsed = JSON.parse(reader.result);
-      state = parsed;
-      hydrateUIFromState();
-      toast("JSON importado com sucesso.");
-      showStep(1);
-    }catch(e){
-      toast("JSON inválido.");
-    }
-  };
-  reader.readAsText(file);
 }
 
 /* -----------------------------
    Hydrate UI
 ------------------------------ */
 function hydrateUIFromState(){
-  // pills
   buildPills($("#opTypeGroup"), OP_TYPES, () => state.meta.opType, v => state.meta.opType = v);
   buildPills($("#opMomentGroup"), OP_MOMENTS, () => state.meta.opMoment, v => state.meta.opMoment = v);
 
-  // inputs
   $("#opType").value = state.meta.opType;
   $("#opMoment").value = state.meta.opMoment;
 
@@ -1707,6 +1642,7 @@ function hydrateUIFromState(){
   $("#vehicleOdometer").value = state.vehicle.odometer || "";
   $("#vehicleFuelLevel").value = state.vehicle.fuelLevel || "";
   $("#vehicleKeys").value = state.vehicle.keys || "";
+  $("#vehicleTransmission").value = state.vehicle.transmission || "";
 
   $("#clientName").value = state.client.name || "";
   $("#clientDoc").value = state.client.doc || "";
@@ -1722,14 +1658,12 @@ function hydrateUIFromState(){
   $("#acceptTerms").checked = !!state.acceptTerms;
   $("#clientSignerName").value = state.clientSignerName || "";
 
-  // conditional rental extras
   $("#rentalExtras").classList.toggle("hidden", state.meta.opType !== "Locação");
 
   renderChecklist();
   renderDamages();
   renderGeneralPhotos();
 
-  // signatures
   if (sigCompanyPad && sigClientPad){
     sigCompanyPad.load(state.signatures.company);
     sigClientPad.load(state.signatures.client);
@@ -1737,7 +1671,7 @@ function hydrateUIFromState(){
 }
 
 /* -----------------------------
-   Navigation buttons
+   Navigation
 ------------------------------ */
 btnBack.addEventListener("click", () => {
   if (currentStep === 0) return;
@@ -1783,23 +1717,12 @@ $("#btnResetAll").addEventListener("click", () => {
   showStep(1);
 });
 
-$("#btnExportJson").addEventListener("click", exportJson);
-$("#btnExportJson2").addEventListener("click", exportJson);
-
-$("#btnImportJson").addEventListener("click", () => $("#importJsonInput").click());
-$("#importJsonInput").addEventListener("change", (e) => {
-  const file = e.target.files?.[0];
-  if (file) importJsonFile(file);
-  e.target.value = "";
-});
-
 $("#btnAddDamage").addEventListener("click", () => openDamageModal(null));
 
 /* -----------------------------
    Generate PDF
 ------------------------------ */
 $("#btnGeneratePdf").addEventListener("click", async () => {
-  // validate step 4 requirements, even if user jumped
   const err4 = validateStep(4);
   if (err4){
     toast("Antes de gerar PDF: " + err4);
@@ -1818,24 +1741,18 @@ $("#btnGeneratePdf").addEventListener("click", async () => {
    Init
 ------------------------------ */
 function init(){
-  // load draft if exists
   loadDraft();
 
-  // signature pads
   sigCompanyPad = setupSignature("sigCompany", (data) => state.signatures.company = data);
   sigClientPad = setupSignature("sigClient", (data) => state.signatures.client = data);
 
-  // build pills
   buildPills($("#opTypeGroup"), OP_TYPES, () => state.meta.opType, v => state.meta.opType = v);
   buildPills($("#opMomentGroup"), OP_MOMENTS, () => state.meta.opMoment, v => state.meta.opMoment = v);
 
   bindInputs();
   hydrateUIFromState();
 
-  // autosave (extra safety)
   setInterval(saveDraft, 5000);
-
-  // start at home
   showStep(0);
 }
 
@@ -1843,5 +1760,3 @@ init();
 </script>
 </body>
 </html>
-
-
