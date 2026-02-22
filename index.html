@@ -1,0 +1,1823 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vistorias</title>
+
+  <!-- jsPDF (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#f6f7f9;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --primary:#111827;
+      --danger:#b91c1c;
+      --ok:#065f46;
+      --warn:#92400e;
+      --radius:14px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0;
+      background:var(--bg);
+      border-bottom:1px solid var(--line);
+      z-index:10;
+    }
+    .wrap{ max-width:900px; margin:0 auto; padding:14px 14px 90px; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 14px;
+      max-width:900px; margin:0 auto;
+    }
+    .brand{ display:flex; flex-direction:column; line-height:1.1; }
+    .brand b{ font-size:16px; }
+    .brand span{ font-size:12px; color:var(--muted); }
+    .progress{
+      height:6px; background:var(--line);
+      border-radius:999px; overflow:hidden;
+      margin:0 14px 12px;
+      max-width:900px;
+    }
+    .progress > div{ height:100%; width:0%; background:var(--primary); }
+
+    h2{ margin:0 0 10px; font-size:18px; }
+    p.help{ margin:0 0 12px; color:var(--muted); font-size:13px; }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:14px;
+      margin:10px 0;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+    @media(min-width:740px){
+      .grid.two{ grid-template-columns:1fr 1fr; }
+      .grid.three{ grid-template-columns:1fr 1fr 1fr; }
+    }
+    label{ font-size:12px; color:var(--muted); display:block; margin:0 0 6px; }
+    input, select, textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:14px;
+      outline:none;
+    }
+    textarea{ min-height:84px; resize:vertical; }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    .pill-group{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .pill{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:13px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill[data-on="1"]{ background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .status{
+      display:flex; gap:6px; flex-wrap:wrap;
+    }
+    .mini{
+      padding:7px 10px; border-radius:999px; cursor:pointer;
+      border:1px solid var(--line); background:#fff; font-size:12px;
+    }
+    .mini[data-on="1"]{ border-color:var(--primary); background:var(--primary); color:#fff; }
+    .mini.ok[data-on="1"]{ background:var(--ok); border-color:var(--ok); }
+    .mini.bad[data-on="1"]{ background:var(--danger); border-color:var(--danger); }
+    .mini.na[data-on="1"]{ background:var(--muted); border-color:var(--muted); }
+
+    .footerbar{
+      position:fixed; left:0; right:0; bottom:0;
+      background:rgba(255,255,255,.92);
+      border-top:1px solid var(--line);
+      backdrop-filter: blur(8px);
+      padding:10px 14px;
+    }
+    .footerbar .inner{
+      max-width:900px; margin:0 auto;
+      display:flex; gap:10px; justify-content:space-between; align-items:center;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .btn.primary{
+      background:var(--primary);
+      color:#fff;
+      border-color:var(--primary);
+    }
+    .btn.danger{
+      background:var(--danger);
+      color:#fff;
+      border-color:var(--danger);
+    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+    .right{ display:flex; gap:10px; align-items:center; }
+
+    .hidden{ display:none !important; }
+    .divider{ height:1px; background:var(--line); margin:12px 0; }
+
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .item{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
+    .item-head{
+      display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+    }
+    .item-head b{ font-size:14px; }
+    .item-head small{ color:var(--muted); }
+    .actions{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .thumbs{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
+    }
+    .thumb{
+      width:70px; height:70px; object-fit:cover;
+      border-radius:10px; border:1px solid var(--line);
+      background:#fff;
+    }
+
+    .modal{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.4);
+      display:flex; align-items:flex-end; justify-content:center;
+      padding:12px;
+      z-index:50;
+    }
+    .sheet{
+      background:#fff;
+      width:min(900px,100%);
+      border-radius:18px;
+      padding:14px;
+      border:1px solid var(--line);
+      max-height:92vh;
+      overflow:auto;
+    }
+
+    canvas.sig{
+      width:100%;
+      height:170px;
+      background:#fff;
+      border:1px dashed var(--line);
+      border-radius:12px;
+      touch-action:none;
+    }
+
+    .req{ color:var(--danger); font-weight:600; }
+    .tag{
+      display:inline-block;
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--muted);
+      margin-left:6px;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <b>Vistorias</b>
+      <span>Consignação • Venda • Locação</span>
+    </div>
+    <div class="right">
+      <button class="btn" id="btnNew">Nova</button>
+      <button class="btn" id="btnExportJson">Exportar JSON</button>
+      <button class="btn" id="btnImportJson">Importar JSON</button>
+    </div>
+  </div>
+  <div class="progress"><div id="progressFill"></div></div>
+</header>
+
+<div class="wrap">
+  <!-- STEP 0 (home/info) -->
+  <div id="screenHome" class="card">
+    <h2>Como funciona</h2>
+    <p class="help">
+      Preencha a vistoria em etapas, tire as fotos e colete as assinaturas. No final, gere um PDF para arquivar e compartilhar.
+      O app salva automaticamente um rascunho no seu navegador.
+    </p>
+    <div class="divider"></div>
+    <div class="row">
+      <button class="btn primary" id="btnStart">Iniciar vistoria</button>
+      <button class="btn" id="btnClearDraft">Limpar rascunho</button>
+    </div>
+    <p class="help" style="margin-top:10px">
+      Dica: use “Exportar JSON” no final para guardar a vistoria e reimportar depois se precisar gerar PDF novamente.
+    </p>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="screen1" class="hidden">
+    <h2>Etapa 1/5 — Identificação</h2>
+    <p class="help">Escolha tipo e momento da vistoria. Número e data/hora são gerados automaticamente (editáveis).</p>
+
+    <div class="card">
+      <div class="grid two">
+        <div>
+          <label>Tipo de operação <span class="req">*</span></label>
+          <div class="pill-group" id="opTypeGroup"></div>
+          <input type="hidden" id="opType" />
+        </div>
+        <div>
+          <label>Momento <span class="req">*</span></label>
+          <div class="pill-group" id="opMomentGroup"></div>
+          <input type="hidden" id="opMoment" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid two">
+        <div>
+          <label>Número da vistoria <span class="tag">auto</span></label>
+          <input id="inspectionId" placeholder="Ex: 2026-02-22_1420_ABC1234" />
+        </div>
+        <div>
+          <label>Data e hora <span class="req">*</span></label>
+          <input id="inspectionDateTime" type="datetime-local" />
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:10px">
+        <div>
+          <label>Responsável da empresa <span class="req">*</span></label>
+          <input id="companyResponsible" placeholder="Nome de quem está realizando a vistoria" />
+        </div>
+        <div>
+          <label>Observação (opcional)</label>
+          <input id="inspectionNote" placeholder="Ex: carro chegou com pouca gasolina" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="screen2" class="hidden">
+    <h2>Etapa 2/5 — Veículo e Cliente</h2>
+    <p class="help">Preencha o básico. CPF/CNPJ é opcional.</p>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px; font-size:15px;">Veículo</h3>
+      <div class="grid two">
+        <div>
+          <label>Placa <span class="req">*</span></label>
+          <input id="vehiclePlate" placeholder="ABC1D23" />
+        </div>
+        <div>
+          <label>Marca / Modelo <span class="req">*</span></label>
+          <input id="vehicleModel" placeholder="Ex: Fiat Argo" />
+        </div>
+      </div>
+
+      <div class="grid three" style="margin-top:10px">
+        <div>
+          <label>Ano (opcional)</label>
+          <input id="vehicleYear" inputmode="numeric" placeholder="Ex: 2020" />
+        </div>
+        <div>
+          <label>Cor (opcional)</label>
+          <input id="vehicleColor" placeholder="Ex: Prata" />
+        </div>
+        <div>
+          <label>KM (odômetro) <span class="req">*</span></label>
+          <input id="vehicleOdometer" inputmode="numeric" placeholder="Ex: 45678" />
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:10px">
+        <div>
+          <label>Combustível (nível) <span class="req">*</span></label>
+          <select id="vehicleFuelLevel">
+            <option value="">Selecione...</option>
+            <option>Vazio</option>
+            <option>1/4</option>
+            <option>1/2</option>
+            <option>3/4</option>
+            <option>Cheio</option>
+          </select>
+        </div>
+        <div>
+          <label>Nº de chaves (opcional)</label>
+          <input id="vehicleKeys" inputmode="numeric" placeholder="Ex: 2" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px; font-size:15px;">Cliente / Parte</h3>
+      <div class="grid two">
+        <div>
+          <label>Nome / Razão social <span class="req">*</span></label>
+          <input id="clientName" placeholder="Nome do cliente" />
+        </div>
+        <div>
+          <label>CPF/CNPJ (opcional)</label>
+          <input id="clientDoc" placeholder="Somente se quiser" />
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:10px">
+        <div>
+          <label>Telefone (opcional)</label>
+          <input id="clientPhone" placeholder="(00) 00000-0000" />
+        </div>
+        <div>
+          <label>E-mail (opcional)</label>
+          <input id="clientEmail" placeholder="email@exemplo.com" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="rentalExtras" class="hidden">
+        <h3 style="margin:0 0 10px; font-size:15px;">Locação — Condutor (opcional)</h3>
+        <div class="grid two">
+          <div>
+            <label>Nome do condutor</label>
+            <input id="driverName" placeholder="Se diferente do cliente" />
+          </div>
+          <div>
+            <label>CNH (número)</label>
+            <input id="driverCnh" placeholder="Número da CNH" />
+          </div>
+        </div>
+        <div class="grid two" style="margin-top:10px">
+          <div>
+            <label>Validade CNH</label>
+            <input id="driverCnhValid" type="date" />
+          </div>
+          <div>
+            <label>Contrato nº (opcional)</label>
+            <input id="rentalContract" placeholder="Ex: 12345" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="screen3" class="hidden">
+    <h2>Etapa 3/5 — Checklist e Danos</h2>
+    <p class="help">Marque OK / Não OK / N/A. Registre danos com fotos, se necessário.</p>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px; font-size:15px;">Checklist</h3>
+      <div id="checklistContainer" class="list"></div>
+      <div class="divider"></div>
+      <label>Observações gerais (opcional)</label>
+      <textarea id="generalNotes" placeholder="Ex: pneus traseiros próximos do limite"></textarea>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center">
+        <h3 style="margin:0; font-size:15px;">Danos</h3>
+        <button class="btn primary" id="btnAddDamage">+ Adicionar dano</button>
+      </div>
+      <div style="margin-top:10px" id="damageList" class="list"></div>
+      <p class="help" style="margin-top:10px">
+        Dica: tire ao menos 1 foto por dano. No PDF, as fotos entram em páginas adicionais.
+      </p>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div id="screen4" class="hidden">
+    <h2>Etapa 4/5 — Fotos gerais e Assinaturas</h2>
+    <p class="help">Tire as fotos recomendadas e colha as assinaturas antes de gerar o PDF.</p>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px; font-size:15px;">Fotos gerais <span class="req">*</span></h3>
+      <p class="help">Recomendado (mínimo): frente, traseira, laterais, painel/KM, interior e porta-malas.</p>
+      <div id="generalPhotosContainer" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px; font-size:15px;">Assinaturas <span class="req">*</span></h3>
+      <div class="grid two">
+        <div>
+          <label>Assinatura — Empresa</label>
+          <canvas class="sig" id="sigCompany"></canvas>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" data-clear-sig="company">Limpar</button>
+          </div>
+        </div>
+        <div>
+          <label>Assinatura — Cliente</label>
+          <canvas class="sig" id="sigClient"></canvas>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" data-clear-sig="client">Limpar</button>
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <label>Nome de quem assinou pelo cliente (opcional)</label>
+      <input id="clientSignerName" placeholder="Se diferente do nome do cliente" />
+      <div style="margin-top:10px">
+        <label style="display:flex; gap:10px; align-items:flex-start; cursor:pointer;">
+          <input id="acceptTerms" type="checkbox" style="width:auto; margin-top:2px;">
+          <span style="font-size:13px; color:var(--muted);">
+            Confirmo que as informações e imagens registradas representam o estado do veículo neste momento.
+          </span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div id="screen5" class="hidden">
+    <h2>Etapa 5/5 — Revisão e PDF</h2>
+    <p class="help">Confira o resumo e gere o PDF.</p>
+
+    <div class="card" id="reviewCard"></div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div>
+          <b>Gerar PDF</b>
+          <div style="color:var(--muted); font-size:13px; margin-top:4px">
+            O arquivo será baixado com nome padronizado.
+          </div>
+        </div>
+        <button class="btn primary" id="btnGeneratePdf">Gerar PDF</button>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <button class="btn" id="btnExportJson2">Exportar JSON</button>
+        <button class="btn danger" id="btnResetAll">Nova vistoria (limpar tudo)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DAMAGE -->
+  <div id="damageModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="sheet">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <b id="damageModalTitle">Adicionar dano</b>
+        <button class="btn" id="btnCloseDamage">Fechar</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid two">
+        <div>
+          <label>Área <span class="req">*</span></label>
+          <select id="damageArea">
+            <option value="">Selecione...</option>
+            <option>Frente</option>
+            <option>Traseira</option>
+            <option>Lateral esquerda</option>
+            <option>Lateral direita</option>
+            <option>Teto</option>
+            <option>Capô</option>
+            <option>Porta-malas</option>
+            <option>Para-choque dianteiro</option>
+            <option>Para-choque traseiro</option>
+            <option>Rodas/Pneus</option>
+            <option>Vidros</option>
+            <option>Interior</option>
+          </select>
+        </div>
+        <div>
+          <label>Tipo <span class="req">*</span></label>
+          <select id="damageType">
+            <option value="">Selecione...</option>
+            <option>Risco</option>
+            <option>Amassado</option>
+            <option>Trinca</option>
+            <option>Quebra</option>
+            <option>Pintura</option>
+            <option>Arranhão (roda)</option>
+            <option>Furo</option>
+            <option>Outro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:10px">
+        <div>
+          <label>Severidade <span class="req">*</span></label>
+          <select id="damageSeverity">
+            <option value="">Selecione...</option>
+            <option>Leve</option>
+            <option>Médio</option>
+            <option>Grave</option>
+          </select>
+        </div>
+        <div>
+          <label>Descrição <span class="req">*</span></label>
+          <input id="damageDesc" placeholder="Ex: risco na porta traseira" />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card" style="background:#fff;">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <b style="font-size:14px;">Fotos do dano</b>
+          <label class="btn" style="display:inline-flex; align-items:center; gap:8px; margin:0;">
+            Adicionar foto
+            <input id="damagePhotoInput" type="file" accept="image/*" capture="environment" style="display:none" multiple />
+          </label>
+        </div>
+        <div id="damagePhotoThumbs" class="thumbs"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn primary" id="btnSaveDamage">Salvar dano</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- hidden file input for import -->
+  <input id="importJsonInput" type="file" accept="application/json" class="hidden" />
+</div>
+
+<div class="footerbar">
+  <div class="inner">
+    <div style="font-size:13px; color:var(--muted);" id="stepLabel">Início</div>
+    <div class="right">
+      <button class="btn" id="btnBack">Voltar</button>
+      <button class="btn primary" id="btnNext">Próximo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -----------------------------
+   State & Defaults
+------------------------------ */
+const STORAGE_KEY = "vistoria_draft_v1";
+
+const OP_TYPES = ["Consignação","Venda","Locação"];
+const OP_MOMENTS = ["Entrada","Saída"];
+
+const CHECKLIST = [
+  { section:"Exterior", items:["Lataria","Para-choques","Faróis","Lanternas","Vidros","Retrovisores","Pneus","Rodas","Limpadores"] },
+  { section:"Interior", items:["Bancos","Painel","Multimídia","Ar-condicionado","Cintos","Forros/Portas","Carpete","Porta-malas"] },
+  { section:"Itens", items:["Triângulo","Macaco","Chave de roda","Tapetes","Estepe"] }
+];
+
+const GENERAL_PHOTO_SLOTS = [
+  { key:"frente", label:"Frente" },
+  { key:"traseira", label:"Traseira" },
+  { key:"lat_esq", label:"Lateral esquerda" },
+  { key:"lat_dir", label:"Lateral direita" },
+  { key:"painel_km", label:"Painel / KM" },
+  { key:"interior_frente", label:"Interior (dianteiro)" },
+  { key:"interior_tras", label:"Interior (traseiro)" },
+  { key:"porta_malas", label:"Porta-malas" }
+];
+
+function nowAsDatetimeLocal(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth()+1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+function genInspectionId(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth()+1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}_${hh}${mi}`;
+}
+
+function blankState(){
+  const checklist = {};
+  for (const sec of CHECKLIST){
+    for (const it of sec.items){
+      checklist[`${sec.section}:${it}`] = ""; // "OK" | "NOK" | "NA"
+    }
+  }
+  const generalPhotos = {};
+  for (const slot of GENERAL_PHOTO_SLOTS){
+    generalPhotos[slot.key] = null; // base64 jpg
+  }
+
+  return {
+    meta:{
+      opType:"",
+      opMoment:"",
+      inspectionId: genInspectionId(),
+      inspectionDateTime: nowAsDatetimeLocal(),
+      companyResponsible:"",
+      inspectionNote:""
+    },
+    vehicle:{
+      plate:"",
+      model:"",
+      year:"",
+      color:"",
+      odometer:"",
+      fuelLevel:"",
+      keys:""
+    },
+    client:{
+      name:"",
+      doc:"",
+      phone:"",
+      email:"",
+      driverName:"",
+      driverCnh:"",
+      driverCnhValid:"",
+      rentalContract:""
+    },
+    checklist,
+    generalNotes:"",
+    damages:[], // {id, area,type,severity,desc, photos:[base64...]}
+    generalPhotos,
+    signatures:{
+      company:null,
+      client:null
+    },
+    acceptTerms:false,
+    clientSignerName:""
+  };
+}
+
+let state = blankState();
+let currentStep = 0; // 0=home, 1..5
+let damageEditId = null;
+
+/* -----------------------------
+   DOM helpers
+------------------------------ */
+const $ = sel => document.querySelector(sel);
+const screenHome = $("#screenHome");
+const screens = {
+  1: $("#screen1"),
+  2: $("#screen2"),
+  3: $("#screen3"),
+  4: $("#screen4"),
+  5: $("#screen5")
+};
+const btnBack = $("#btnBack");
+const btnNext = $("#btnNext");
+const stepLabel = $("#stepLabel");
+const progressFill = $("#progressFill");
+
+function showStep(step){
+  currentStep = step;
+  // hide all
+  screenHome.classList.toggle("hidden", step !== 0);
+  for (const k of [1,2,3,4,5]) screens[k].classList.add("hidden");
+  if (step>=1 && step<=5) screens[step].classList.remove("hidden");
+
+  // footer label + buttons
+  const labels = {
+    0:"Início",
+    1:"Etapa 1/5",
+    2:"Etapa 2/5",
+    3:"Etapa 3/5",
+    4:"Etapa 4/5",
+    5:"Etapa 5/5"
+  };
+  stepLabel.textContent = labels[step] || "";
+
+  btnBack.disabled = (step === 0);
+  btnNext.classList.toggle("hidden", step === 5);
+  btnNext.textContent = (step === 0) ? "Iniciar" : "Próximo";
+
+  // progress
+  const pct = step === 0 ? 0 : (step/5)*100;
+  progressFill.style.width = pct + "%";
+
+  // conditional rental extras
+  $("#rentalExtras").classList.toggle("hidden", state.meta.opType !== "Locação");
+
+  // review
+  if (step === 5) renderReview();
+
+  saveDraft();
+}
+
+function toast(msg){
+  alert(msg);
+}
+
+/* -----------------------------
+   Save/Load draft
+------------------------------ */
+function saveDraft(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    // ignore
+  }
+}
+function loadDraft(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    state = parsed;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+function clearDraft(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+}
+
+/* -----------------------------
+   Pills for type/moment
+------------------------------ */
+function buildPills(container, values, getter, setter){
+  container.innerHTML = "";
+  for (const v of values){
+    const el = document.createElement("div");
+    el.className = "pill";
+    el.textContent = v;
+    el.dataset.on = getter() === v ? "1" : "0";
+    el.addEventListener("click", () => {
+      setter(v);
+      // rerender
+      buildPills(container, values, getter, setter);
+      // update conditional blocks
+      $("#rentalExtras").classList.toggle("hidden", state.meta.opType !== "Locação");
+      saveDraft();
+    });
+    container.appendChild(el);
+  }
+}
+
+/* -----------------------------
+   Checklist
+------------------------------ */
+function renderChecklist(){
+  const wrap = $("#checklistContainer");
+  wrap.innerHTML = "";
+  for (const sec of CHECKLIST){
+    const secCard = document.createElement("div");
+    secCard.className = "item";
+    secCard.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <b>${sec.section}</b>
+        <small>${sec.items.length} itens</small>
+      </div>`;
+    const inner = document.createElement("div");
+    inner.style.marginTop = "10px";
+    inner.style.display = "flex";
+    inner.style.flexDirection = "column";
+    inner.style.gap = "10px";
+
+    for (const it of sec.items){
+      const key = `${sec.section}:${it}`;
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.justifyContent = "space-between";
+      row.style.alignItems = "center";
+      row.style.gap = "10px";
+      row.innerHTML = `<div style="min-width:140px;"><b style="font-size:13px;">${it}</b></div>`;
+
+      const status = document.createElement("div");
+      status.className = "status";
+
+      const makeBtn = (label, val, cls) => {
+        const b = document.createElement("div");
+        b.className = `mini ${cls||""}`.trim();
+        b.textContent = label;
+        b.dataset.on = state.checklist[key] === val ? "1" : "0";
+        b.addEventListener("click", () => {
+          state.checklist[key] = val;
+          renderChecklist();
+          saveDraft();
+        });
+        return b;
+      };
+      status.appendChild(makeBtn("OK","OK","ok"));
+      status.appendChild(makeBtn("Não OK","NOK","bad"));
+      status.appendChild(makeBtn("N/A","NA","na"));
+
+      row.appendChild(status);
+      inner.appendChild(row);
+    }
+    secCard.appendChild(inner);
+    wrap.appendChild(secCard);
+  }
+}
+
+/* -----------------------------
+   Photos: compress to base64 jpg
+------------------------------ */
+async function fileToCompressedJpegBase64(file, maxW=1280, quality=0.72){
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = URL.createObjectURL(file);
+  });
+
+  const scale = Math.min(1, maxW / img.width);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+  try{ URL.revokeObjectURL(img.src); }catch(e){}
+  return dataUrl;
+}
+
+/* -----------------------------
+   General photos UI
+------------------------------ */
+function renderGeneralPhotos(){
+  const wrap = $("#generalPhotosContainer");
+  wrap.innerHTML = "";
+
+  for (const slot of GENERAL_PHOTO_SLOTS){
+    const card = document.createElement("div");
+    card.className = "item";
+
+    const img = state.generalPhotos[slot.key];
+
+    card.innerHTML = `
+      <div class="item-head">
+        <div>
+          <b>${slot.label}</b>
+          <div><small>${img ? "Foto adicionada" : "Sem foto"}</small></div>
+        </div>
+        <div class="actions">
+          <label class="btn" style="margin:0; display:inline-flex; align-items:center; gap:8px;">
+            Tirar/Selecionar
+            <input type="file" accept="image/*" capture="environment" style="display:none" data-photo-slot="${slot.key}">
+          </label>
+          <button class="btn" data-clear-photo="${slot.key}" ${img ? "" : "disabled"}>Remover</button>
+        </div>
+      </div>
+      <div class="thumbs" style="margin-top:10px;">
+        ${img ? `<img class="thumb" src="${img}" alt="${slot.label}">` : ""}
+      </div>
+    `;
+    wrap.appendChild(card);
+  }
+
+  // bind inputs
+  wrap.querySelectorAll('input[type="file"][data-photo-slot]').forEach(inp => {
+    inp.addEventListener("change", async (e) => {
+      const key = e.target.dataset.photoSlot;
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try{
+        const base64 = await fileToCompressedJpegBase64(file);
+        state.generalPhotos[key] = base64;
+        renderGeneralPhotos();
+        saveDraft();
+      }catch(err){
+        toast("Não foi possível processar a imagem.");
+      }finally{
+        e.target.value = "";
+      }
+    });
+  });
+
+  // bind clear buttons
+  wrap.querySelectorAll("button[data-clear-photo]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.clearPhoto;
+      state.generalPhotos[key] = null;
+      renderGeneralPhotos();
+      saveDraft();
+    });
+  });
+}
+
+/* -----------------------------
+   Damages
+------------------------------ */
+function renderDamages(){
+  const wrap = $("#damageList");
+  wrap.innerHTML = "";
+  if (!state.damages.length){
+    const empty = document.createElement("div");
+    empty.className = "item";
+    empty.innerHTML = `<div style="color:var(--muted); font-size:13px;">Nenhum dano registrado.</div>`;
+    wrap.appendChild(empty);
+    return;
+  }
+
+  for (const d of state.damages){
+    const card = document.createElement("div");
+    card.className = "item";
+    const photos = d.photos || [];
+    card.innerHTML = `
+      <div class="item-head">
+        <div>
+          <b>${d.area} — ${d.type} (${d.severity})</b>
+          <div><small>${d.desc}</small></div>
+        </div>
+        <div class="actions">
+          <button class="btn" data-edit-damage="${d.id}">Editar</button>
+          <button class="btn danger" data-del-damage="${d.id}">Excluir</button>
+        </div>
+      </div>
+      <div class="thumbs">
+        ${photos.slice(0,6).map(p => `<img class="thumb" src="${p}" alt="Foto dano">`).join("")}
+      </div>
+      ${photos.length>6 ? `<div style="margin-top:6px; color:var(--muted); font-size:12px;">+${photos.length-6} foto(s)</div>` : ""}
+    `;
+    wrap.appendChild(card);
+  }
+
+  wrap.querySelectorAll("button[data-edit-damage]").forEach(btn => {
+    btn.addEventListener("click", () => openDamageModal(btn.dataset.editDamage));
+  });
+  wrap.querySelectorAll("button[data-del-damage]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.delDamage;
+      if (!confirm("Excluir este dano?")) return;
+      state.damages = state.damages.filter(x => x.id !== id);
+      renderDamages();
+      saveDraft();
+    });
+  });
+}
+
+function openDamageModal(id=null){
+  damageEditId = id;
+  const modal = $("#damageModal");
+  modal.classList.remove("hidden");
+
+  const title = $("#damageModalTitle");
+  const thumbs = $("#damagePhotoThumbs");
+  thumbs.innerHTML = "";
+
+  if (!id){
+    title.textContent = "Adicionar dano";
+    $("#damageArea").value = "";
+    $("#damageType").value = "";
+    $("#damageSeverity").value = "";
+    $("#damageDesc").value = "";
+    thumbs.dataset.photos = JSON.stringify([]);
+  }else{
+    title.textContent = "Editar dano";
+    const d = state.damages.find(x => x.id === id);
+    $("#damageArea").value = d.area;
+    $("#damageType").value = d.type;
+    $("#damageSeverity").value = d.severity;
+    $("#damageDesc").value = d.desc;
+    thumbs.dataset.photos = JSON.stringify(d.photos || []);
+    renderDamageThumbs();
+  }
+}
+
+function closeDamageModal(){
+  $("#damageModal").classList.add("hidden");
+  damageEditId = null;
+  $("#damagePhotoInput").value = "";
+}
+
+function renderDamageThumbs(){
+  const thumbs = $("#damagePhotoThumbs");
+  const photos = JSON.parse(thumbs.dataset.photos || "[]");
+  thumbs.innerHTML = "";
+  for (let i=0;i<photos.length;i++){
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.alignItems = "center";
+    wrap.style.gap = "6px";
+
+    const img = document.createElement("img");
+    img.className = "thumb";
+    img.src = photos[i];
+
+    const del = document.createElement("button");
+    del.className = "btn";
+    del.textContent = "Remover";
+    del.style.padding = "6px 10px";
+    del.style.fontSize = "12px";
+    del.addEventListener("click", () => {
+      photos.splice(i,1);
+      thumbs.dataset.photos = JSON.stringify(photos);
+      renderDamageThumbs();
+    });
+
+    wrap.appendChild(img);
+    wrap.appendChild(del);
+    thumbs.appendChild(wrap);
+  }
+}
+
+$("#damagePhotoInput").addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  const thumbs = $("#damagePhotoThumbs");
+  const photos = JSON.parse(thumbs.dataset.photos || "[]");
+
+  for (const f of files){
+    try{
+      const base64 = await fileToCompressedJpegBase64(f, 1280, 0.72);
+      photos.push(base64);
+    }catch(err){
+      toast("Não foi possível processar uma das fotos.");
+    }
+  }
+  thumbs.dataset.photos = JSON.stringify(photos);
+  renderDamageThumbs();
+  e.target.value = "";
+});
+
+$("#btnSaveDamage").addEventListener("click", () => {
+  const area = $("#damageArea").value.trim();
+  const type = $("#damageType").value.trim();
+  const severity = $("#damageSeverity").value.trim();
+  const desc = $("#damageDesc").value.trim();
+  const photos = JSON.parse($("#damagePhotoThumbs").dataset.photos || "[]");
+
+  if (!area || !type || !severity || !desc){
+    toast("Preencha área, tipo, severidade e descrição.");
+    return;
+  }
+
+  if (!damageEditId){
+    state.damages.push({
+      id: crypto.randomUUID(),
+      area, type, severity, desc,
+      photos
+    });
+  }else{
+    const idx = state.damages.findIndex(x => x.id === damageEditId);
+    if (idx >= 0){
+      state.damages[idx] = { ...state.damages[idx], area, type, severity, desc, photos };
+    }
+  }
+  renderDamages();
+  saveDraft();
+  closeDamageModal();
+});
+
+$("#btnCloseDamage").addEventListener("click", closeDamageModal);
+$("#damageModal").addEventListener("click", (e) => {
+  if (e.target.id === "damageModal") closeDamageModal();
+});
+
+/* -----------------------------
+   Signature pads (simple)
+------------------------------ */
+function setupSignature(canvasId, getSetter){
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  let drawing = false;
+  let last = null;
+
+  function resize(){
+    // keep internal resolution for crisp lines
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(1, window.devicePixelRatio || 1);
+    const w = Math.round(rect.width * ratio);
+    const h = Math.round(rect.height * ratio);
+    const img = canvas.toDataURL("image/png"); // preserve if any
+    canvas.width = w; canvas.height = h;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111827";
+    // restore previous image (best-effort)
+    const temp = new Image();
+    temp.onload = () => ctx.drawImage(temp, 0, 0, rect.width, rect.height);
+    temp.src = img;
+  }
+
+  function getPos(evt){
+    const rect = canvas.getBoundingClientRect();
+    const t = evt.touches?.[0];
+    const clientX = t ? t.clientX : evt.clientX;
+    const clientY = t ? t.clientY : evt.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }
+
+  function down(evt){
+    evt.preventDefault();
+    drawing = true;
+    last = getPos(evt);
+  }
+  function move(evt){
+    if (!drawing) return;
+    evt.preventDefault();
+    const p = getPos(evt);
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    last = p;
+  }
+  function up(){
+    if (!drawing) return;
+    drawing = false;
+    last = null;
+    // save signature
+    const data = canvas.toDataURL("image/png");
+    getSetter(data);
+    saveDraft();
+  }
+
+  canvas.addEventListener("mousedown", down);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", up);
+
+  canvas.addEventListener("touchstart", down, {passive:false});
+  canvas.addEventListener("touchmove", move, {passive:false});
+  window.addEventListener("touchend", up);
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  return {
+    clear(){
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0,0,rect.width,rect.height);
+      getSetter(null);
+      saveDraft();
+    },
+    load(dataUrl){
+      if (!dataUrl) return;
+      const img = new Image();
+      img.onload = () => {
+        const rect = canvas.getBoundingClientRect();
+        ctx.clearRect(0,0,rect.width,rect.height);
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = dataUrl;
+    }
+  };
+}
+
+let sigCompanyPad, sigClientPad;
+
+/* -----------------------------
+   Bind inputs -> state
+------------------------------ */
+function bindInputs(){
+  // step 1
+  $("#inspectionId").addEventListener("input", e => { state.meta.inspectionId = e.target.value; saveDraft(); });
+  $("#inspectionDateTime").addEventListener("input", e => { state.meta.inspectionDateTime = e.target.value; saveDraft(); });
+  $("#companyResponsible").addEventListener("input", e => { state.meta.companyResponsible = e.target.value; saveDraft(); });
+  $("#inspectionNote").addEventListener("input", e => { state.meta.inspectionNote = e.target.value; saveDraft(); });
+
+  // step 2
+  $("#vehiclePlate").addEventListener("input", e => { state.vehicle.plate = e.target.value; saveDraft(); });
+  $("#vehicleModel").addEventListener("input", e => { state.vehicle.model = e.target.value; saveDraft(); });
+  $("#vehicleYear").addEventListener("input", e => { state.vehicle.year = e.target.value; saveDraft(); });
+  $("#vehicleColor").addEventListener("input", e => { state.vehicle.color = e.target.value; saveDraft(); });
+  $("#vehicleOdometer").addEventListener("input", e => { state.vehicle.odometer = e.target.value; saveDraft(); });
+  $("#vehicleFuelLevel").addEventListener("input", e => { state.vehicle.fuelLevel = e.target.value; saveDraft(); });
+  $("#vehicleKeys").addEventListener("input", e => { state.vehicle.keys = e.target.value; saveDraft(); });
+
+  $("#clientName").addEventListener("input", e => { state.client.name = e.target.value; saveDraft(); });
+  $("#clientDoc").addEventListener("input", e => { state.client.doc = e.target.value; saveDraft(); });
+  $("#clientPhone").addEventListener("input", e => { state.client.phone = e.target.value; saveDraft(); });
+  $("#clientEmail").addEventListener("input", e => { state.client.email = e.target.value; saveDraft(); });
+
+  $("#driverName").addEventListener("input", e => { state.client.driverName = e.target.value; saveDraft(); });
+  $("#driverCnh").addEventListener("input", e => { state.client.driverCnh = e.target.value; saveDraft(); });
+  $("#driverCnhValid").addEventListener("input", e => { state.client.driverCnhValid = e.target.value; saveDraft(); });
+  $("#rentalContract").addEventListener("input", e => { state.client.rentalContract = e.target.value; saveDraft(); });
+
+  // step 3
+  $("#generalNotes").addEventListener("input", e => { state.generalNotes = e.target.value; saveDraft(); });
+
+  // step 4
+  $("#acceptTerms").addEventListener("change", e => { state.acceptTerms = e.target.checked; saveDraft(); });
+  $("#clientSignerName").addEventListener("input", e => { state.clientSignerName = e.target.value; saveDraft(); });
+
+  // signature clear buttons
+  document.querySelectorAll("button[data-clear-sig]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const which = btn.dataset.clearSig;
+      if (which === "company") sigCompanyPad.clear();
+      if (which === "client") sigClientPad.clear();
+    });
+  });
+}
+
+/* -----------------------------
+   Validation per step
+------------------------------ */
+function requireVal(v){ return (v ?? "").toString().trim().length > 0; }
+
+function validateStep(step){
+  if (step === 1){
+    if (!requireVal(state.meta.opType)) return "Selecione o tipo de operação.";
+    if (!requireVal(state.meta.opMoment)) return "Selecione o momento (Entrada/Saída).";
+    if (!requireVal(state.meta.inspectionDateTime)) return "Preencha a data e hora.";
+    if (!requireVal(state.meta.companyResponsible)) return "Preencha o responsável da empresa.";
+  }
+  if (step === 2){
+    if (!requireVal(state.vehicle.plate)) return "Preencha a placa.";
+    if (!requireVal(state.vehicle.model)) return "Preencha marca/modelo.";
+    if (!requireVal(state.vehicle.odometer)) return "Preencha o KM.";
+    if (!requireVal(state.vehicle.fuelLevel)) return "Selecione o nível de combustível.";
+    if (!requireVal(state.client.name)) return "Preencha o nome do cliente/parte.";
+  }
+  if (step === 4){
+    // photos recommended: require at least 5 of 8? keep simple: require at least 4 + painel/KM
+    const hasPanel = !!state.generalPhotos["painel_km"];
+    const count = Object.values(state.generalPhotos).filter(Boolean).length;
+    if (!hasPanel) return "Adicione a foto do Painel / KM.";
+    if (count < 4) return "Adicione pelo menos 4 fotos gerais (incluindo Painel/KM).";
+    if (!state.signatures.company) return "Colete a assinatura da empresa.";
+    if (!state.signatures.client) return "Colete a assinatura do cliente.";
+    if (!state.acceptTerms) return "Marque a confirmação de aceite.";
+  }
+  return null;
+}
+
+/* -----------------------------
+   Review
+------------------------------ */
+function esc(s){
+  return (s ?? "").toString().replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+function renderReview(){
+  const div = $("#reviewCard");
+  const meta = state.meta, v = state.vehicle, c = state.client;
+
+  const checklistSummary = (() => {
+    const vals = Object.values(state.checklist);
+    const ok = vals.filter(x => x==="OK").length;
+    const nok = vals.filter(x => x==="NOK").length;
+    const na = vals.filter(x => x==="NA").length;
+    return {ok,nok,na,total:vals.length};
+  })();
+
+  const photosCount = Object.values(state.generalPhotos).filter(Boolean).length;
+
+  div.innerHTML = `
+    <b>Resumo</b>
+    <div style="margin-top:8px; color:var(--muted); font-size:13px">
+      Confira os dados principais antes de gerar o PDF.
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid two">
+      <div class="item">
+        <b>Vistoria</b>
+        <div style="margin-top:6px; font-size:13px; color:var(--muted); line-height:1.5">
+          <div><b style="color:var(--text)">Tipo:</b> ${esc(meta.opType)} • ${esc(meta.opMoment)}</div>
+          <div><b style="color:var(--text)">Nº:</b> ${esc(meta.inspectionId)}</div>
+          <div><b style="color:var(--text)">Data/hora:</b> ${esc(meta.inspectionDateTime)}</div>
+          <div><b style="color:var(--text)">Responsável:</b> ${esc(meta.companyResponsible)}</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <b>Veículo</b>
+        <div style="margin-top:6px; font-size:13px; color:var(--muted); line-height:1.5">
+          <div><b style="color:var(--text)">Placa:</b> ${esc(v.plate)}</div>
+          <div><b style="color:var(--text)">Modelo:</b> ${esc(v.model)}</div>
+          <div><b style="color:var(--text)">KM:</b> ${esc(v.odometer)} • <b style="color:var(--text)">Comb:</b> ${esc(v.fuelLevel)}</div>
+          <div><b style="color:var(--text)">Chaves:</b> ${esc(v.keys || "-")}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid two" style="margin-top:10px">
+      <div class="item">
+        <b>Cliente/Parte</b>
+        <div style="margin-top:6px; font-size:13px; color:var(--muted); line-height:1.5">
+          <div><b style="color:var(--text)">Nome:</b> ${esc(c.name)}</div>
+          <div><b style="color:var(--text)">CPF/CNPJ:</b> ${esc(c.doc || "-")}</div>
+          <div><b style="color:var(--text)">Contato:</b> ${esc(c.phone || "-")} • ${esc(c.email || "-")}</div>
+          ${state.meta.opType==="Locação" ? `
+            <div style="margin-top:6px"><b style="color:var(--text)">Condutor:</b> ${esc(c.driverName || "-")}</div>
+            <div><b style="color:var(--text)">CNH:</b> ${esc(c.driverCnh || "-")} • ${esc(c.driverCnhValid || "-")}</div>
+            <div><b style="color:var(--text)">Contrato:</b> ${esc(c.rentalContract || "-")}</div>
+          ` : ``}
+        </div>
+      </div>
+
+      <div class="item">
+        <b>Registros</b>
+        <div style="margin-top:6px; font-size:13px; color:var(--muted); line-height:1.5">
+          <div><b style="color:var(--text)">Checklist:</b> OK ${checklistSummary.ok} • Não OK ${checklistSummary.nok} • N/A ${checklistSummary.na}</div>
+          <div><b style="color:var(--text)">Danos:</b> ${state.damages.length}</div>
+          <div><b style="color:var(--text)">Fotos gerais:</b> ${photosCount}</div>
+        </div>
+      </div>
+    </div>
+
+    ${state.generalNotes || state.meta.inspectionNote ? `
+      <div class="divider"></div>
+      <div class="item">
+        <b>Observações</b>
+        <div style="margin-top:6px; font-size:13px; color:var(--muted); white-space:pre-wrap">${esc([state.meta.inspectionNote, state.generalNotes].filter(Boolean).join("\n"))}</div>
+      </div>
+    ` : ""}
+  `;
+}
+
+/* -----------------------------
+   PDF generation
+------------------------------ */
+function fmtFilename(){
+  const type = (state.meta.opType || "VISTORIA").toUpperCase().replace(/\s+/g,"_");
+  const moment = (state.meta.opMoment || "").toUpperCase();
+  const plate = (state.vehicle.plate || "SEMPLACA").toUpperCase().replace(/\s+/g,"");
+  const dt = (state.meta.inspectionDateTime || "").replace("T","_").replace(":","");
+  return `VISTORIA_${type}_${moment}_${plate}_${dt}.pdf`;
+}
+
+function addWrappedText(doc, text, x, y, maxW, lineH){
+  const lines = doc.splitTextToSize(text, maxW);
+  doc.text(lines, x, y);
+  return y + lines.length * lineH;
+}
+
+async function generatePdf(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:"mm", format:"a4" });
+
+  const margin = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const contentW = pageW - margin*2;
+
+  const meta = state.meta, v = state.vehicle, c = state.client;
+
+  // Title
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(14);
+  doc.text("VISTORIA DE VEÍCULO", margin, 16);
+
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(10);
+  doc.text(`${meta.opType} • ${meta.opMoment}`, margin, 22);
+
+  doc.setDrawColor(220);
+  doc.line(margin, 25, pageW - margin, 25);
+
+  let y = 32;
+
+  doc.setFont("helvetica","bold");
+  doc.text("Dados da vistoria", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+  doc.text(`Nº: ${meta.inspectionId}`, margin, y); y += 5;
+  doc.text(`Data/hora: ${meta.inspectionDateTime}`, margin, y); y += 5;
+  doc.text(`Responsável (empresa): ${meta.companyResponsible}`, margin, y); y += 7;
+
+  doc.setFont("helvetica","bold");
+  doc.text("Veículo", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+  doc.text(`Placa: ${v.plate}`, margin, y); y += 5;
+  doc.text(`Marca/Modelo: ${v.model}`, margin, y); y += 5;
+  doc.text(`Ano: ${v.year || "-"}   Cor: ${v.color || "-"}`, margin, y); y += 5;
+  doc.text(`KM: ${v.odometer}   Combustível: ${v.fuelLevel}   Chaves: ${v.keys || "-"}`, margin, y); y += 7;
+
+  doc.setFont("helvetica","bold");
+  doc.text("Cliente / Parte", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+  doc.text(`Nome: ${c.name}`, margin, y); y += 5;
+  doc.text(`CPF/CNPJ: ${c.doc || "-"}`, margin, y); y += 5;
+  doc.text(`Telefone: ${c.phone || "-"}   E-mail: ${c.email || "-"}`, margin, y); y += 6;
+
+  if (meta.opType === "Locação"){
+    doc.text(`Condutor: ${c.driverName || "-"}`, margin, y); y += 5;
+    doc.text(`CNH: ${c.driverCnh || "-"}   Validade: ${c.driverCnhValid || "-"}`, margin, y); y += 5;
+    doc.text(`Contrato nº: ${c.rentalContract || "-"}`, margin, y); y += 6;
+  }
+
+  if (meta.inspectionNote){
+    doc.setFont("helvetica","bold");
+    doc.text("Observação (vistoria)", margin, y); y += 6;
+    doc.setFont("helvetica","normal");
+    y = addWrappedText(doc, meta.inspectionNote, margin, y, contentW, 4.5) + 2;
+  }
+
+  // Checklist summary
+  doc.setFont("helvetica","bold");
+  doc.text("Checklist (resumo)", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+
+  const vals = Object.values(state.checklist);
+  const ok = vals.filter(x => x==="OK").length;
+  const nok = vals.filter(x => x==="NOK").length;
+  const na = vals.filter(x => x==="NA").length;
+
+  doc.text(`OK: ${ok}   Não OK: ${nok}   N/A: ${na}`, margin, y); y += 6;
+
+  // If space, include NOK items list
+  const nokItems = [];
+  for (const [k,val] of Object.entries(state.checklist)){
+    if (val === "NOK") nokItems.push(k);
+  }
+  if (nokItems.length){
+    doc.setFont("helvetica","bold");
+    doc.text("Itens marcados como 'Não OK'", margin, y); y += 6;
+    doc.setFont("helvetica","normal");
+    const text = nokItems.map(s => "• " + s.replace(":"," — ")).join("\n");
+    y = addWrappedText(doc, text, margin, y, contentW, 4.5) + 2;
+  }
+
+  // General notes
+  if (state.generalNotes){
+    doc.setFont("helvetica","bold");
+    doc.text("Observações gerais", margin, y); y += 6;
+    doc.setFont("helvetica","normal");
+    y = addWrappedText(doc, state.generalNotes, margin, y, contentW, 4.5) + 2;
+  }
+
+  // Damages list
+  doc.setFont("helvetica","bold");
+  doc.text("Danos registrados", margin, y); y += 6;
+  doc.setFont("helvetica","normal");
+
+  if (!state.damages.length){
+    doc.text("Nenhum dano registrado.", margin, y); y += 6;
+  }else{
+    for (const d of state.damages){
+      const line = `• ${d.area} — ${d.type} (${d.severity}): ${d.desc}`;
+      const nextY = y + 5;
+      if (nextY > pageH - 60){
+        doc.addPage();
+        y = 18;
+      }
+      y = addWrappedText(doc, line, margin, y, contentW, 4.5);
+    }
+    y += 2;
+  }
+
+  // Signatures
+  const ensureSpace = (need) => {
+    if (y + need > pageH - margin){
+      doc.addPage();
+      y = 18;
+    }
+  };
+
+  ensureSpace(60);
+  doc.setDrawColor(220);
+  doc.line(margin, y, pageW - margin, y); y += 6;
+
+  doc.setFont("helvetica","bold");
+  doc.text("Assinaturas", margin, y); y += 6;
+
+  const sigW = (contentW - 10) / 2;
+  const sigH = 30;
+
+  doc.setFont("helvetica","normal");
+  doc.text("Empresa", margin, y);
+  doc.text("Cliente", margin + sigW + 10, y);
+  y += 3;
+
+  const sigY = y;
+  doc.rect(margin, sigY, sigW, sigH);
+  doc.rect(margin + sigW + 10, sigY, sigW, sigH);
+
+  if (state.signatures.company){
+    doc.addImage(state.signatures.company, "PNG", margin+2, sigY+2, sigW-4, sigH-4);
+  }
+  if (state.signatures.client){
+    doc.addImage(state.signatures.client, "PNG", margin + sigW + 12, sigY+2, sigW-4, sigH-4);
+  }
+  y = sigY + sigH + 8;
+
+  doc.setFontSize(9);
+  const signer = state.clientSignerName ? `Assinante (cliente): ${state.clientSignerName}` : "";
+  if (signer){
+    doc.text(signer, margin, y);
+    y += 5;
+  }
+  doc.text("Aceite: vistoria registrada conforme estado observado no momento.", margin, y);
+  y += 6;
+  doc.setFontSize(10);
+
+  // Photos pages: general photos then damage photos
+  const allGeneral = GENERAL_PHOTO_SLOTS
+    .filter(s => !!state.generalPhotos[s.key])
+    .map(s => ({ label:s.label, data:state.generalPhotos[s.key] }));
+
+  const allDamagePhotos = [];
+  for (const d of state.damages){
+    for (let i=0;i<(d.photos||[]).length;i++){
+      allDamagePhotos.push({
+        label: `${d.area} — ${d.type} (${d.severity})`,
+        sub: d.desc,
+        data: d.photos[i]
+      });
+    }
+  }
+
+  function addPhotoGridPage(title, photos){
+    if (!photos.length) return;
+    doc.addPage();
+    let y = 16;
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(13);
+    doc.text(title, margin, y);
+    doc.setFontSize(10);
+    doc.setFont("helvetica","normal");
+    y += 8;
+
+    const cols = 2;
+    const gap = 6;
+    const cellW = (contentW - gap) / cols;
+    const cellH = 60;
+
+    let x = margin;
+    let col = 0;
+
+    for (let i=0;i<photos.length;i++){
+      const p = photos[i];
+
+      if (y + cellH + 14 > pageH - margin){
+        doc.addPage();
+        y = 16;
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(13);
+        doc.text(title + " (cont.)", margin, y);
+        doc.setFontSize(10);
+        doc.setFont("helvetica","normal");
+        y += 8;
+        x = margin; col = 0;
+      }
+
+      // label
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(9);
+      const label = p.sub ? `${p.label} — ${p.sub}` : p.label;
+      const clipped = label.length > 70 ? label.slice(0,67) + "..." : label;
+      doc.text(clipped, x, y);
+
+      // image
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      try{
+        doc.addImage(p.data, "JPEG", x, y+3, cellW, cellH);
+      }catch(e){
+        doc.text("(Falha ao inserir imagem)", x, y+10);
+      }
+
+      // advance
+      col++;
+      if (col >= cols){
+        col = 0;
+        x = margin;
+        y += cellH + 14;
+      }else{
+        x += cellW + gap;
+      }
+    }
+  }
+
+  addPhotoGridPage("Fotos gerais", allGeneral);
+  addPhotoGridPage("Fotos de danos", allDamagePhotos);
+
+  // Save
+  doc.save(fmtFilename());
+}
+
+/* -----------------------------
+   JSON export/import
+------------------------------ */
+function downloadText(filename, text, mime="application/json"){
+  const blob = new Blob([text], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function exportJson(){
+  const data = JSON.stringify(state, null, 2);
+  const plate = (state.vehicle.plate || "SEMPLACA").toUpperCase().replace(/\s+/g,"");
+  const dt = (state.meta.inspectionDateTime || "").replace("T","_").replace(":","");
+  const filename = `VISTORIA_${plate}_${dt}.json`;
+  downloadText(filename, data, "application/json");
+}
+
+function importJsonFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      state = parsed;
+      hydrateUIFromState();
+      toast("JSON importado com sucesso.");
+      showStep(1);
+    }catch(e){
+      toast("JSON inválido.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* -----------------------------
+   Hydrate UI
+------------------------------ */
+function hydrateUIFromState(){
+  // pills
+  buildPills($("#opTypeGroup"), OP_TYPES, () => state.meta.opType, v => state.meta.opType = v);
+  buildPills($("#opMomentGroup"), OP_MOMENTS, () => state.meta.opMoment, v => state.meta.opMoment = v);
+
+  // inputs
+  $("#opType").value = state.meta.opType;
+  $("#opMoment").value = state.meta.opMoment;
+
+  $("#inspectionId").value = state.meta.inspectionId || "";
+  $("#inspectionDateTime").value = state.meta.inspectionDateTime || "";
+  $("#companyResponsible").value = state.meta.companyResponsible || "";
+  $("#inspectionNote").value = state.meta.inspectionNote || "";
+
+  $("#vehiclePlate").value = state.vehicle.plate || "";
+  $("#vehicleModel").value = state.vehicle.model || "";
+  $("#vehicleYear").value = state.vehicle.year || "";
+  $("#vehicleColor").value = state.vehicle.color || "";
+  $("#vehicleOdometer").value = state.vehicle.odometer || "";
+  $("#vehicleFuelLevel").value = state.vehicle.fuelLevel || "";
+  $("#vehicleKeys").value = state.vehicle.keys || "";
+
+  $("#clientName").value = state.client.name || "";
+  $("#clientDoc").value = state.client.doc || "";
+  $("#clientPhone").value = state.client.phone || "";
+  $("#clientEmail").value = state.client.email || "";
+
+  $("#driverName").value = state.client.driverName || "";
+  $("#driverCnh").value = state.client.driverCnh || "";
+  $("#driverCnhValid").value = state.client.driverCnhValid || "";
+  $("#rentalContract").value = state.client.rentalContract || "";
+
+  $("#generalNotes").value = state.generalNotes || "";
+  $("#acceptTerms").checked = !!state.acceptTerms;
+  $("#clientSignerName").value = state.clientSignerName || "";
+
+  // conditional rental extras
+  $("#rentalExtras").classList.toggle("hidden", state.meta.opType !== "Locação");
+
+  renderChecklist();
+  renderDamages();
+  renderGeneralPhotos();
+
+  // signatures
+  if (sigCompanyPad && sigClientPad){
+    sigCompanyPad.load(state.signatures.company);
+    sigClientPad.load(state.signatures.client);
+  }
+}
+
+/* -----------------------------
+   Navigation buttons
+------------------------------ */
+btnBack.addEventListener("click", () => {
+  if (currentStep === 0) return;
+  showStep(Math.max(0, currentStep - 1));
+});
+
+btnNext.addEventListener("click", () => {
+  if (currentStep === 0){
+    showStep(1);
+    return;
+  }
+  const err = validateStep(currentStep);
+  if (err){
+    toast(err);
+    return;
+  }
+  showStep(Math.min(5, currentStep + 1));
+});
+
+/* -----------------------------
+   Header actions
+------------------------------ */
+$("#btnStart").addEventListener("click", () => showStep(1));
+
+$("#btnNew").addEventListener("click", () => {
+  if (!confirm("Iniciar uma nova vistoria e limpar dados atuais?")) return;
+  state = blankState();
+  hydrateUIFromState();
+  showStep(1);
+});
+
+$("#btnClearDraft").addEventListener("click", () => {
+  if (!confirm("Remover rascunho salvo no navegador?")) return;
+  clearDraft();
+  toast("Rascunho removido.");
+});
+
+$("#btnResetAll").addEventListener("click", () => {
+  if (!confirm("Limpar tudo e começar outra vistoria?")) return;
+  clearDraft();
+  state = blankState();
+  hydrateUIFromState();
+  showStep(1);
+});
+
+$("#btnExportJson").addEventListener("click", exportJson);
+$("#btnExportJson2").addEventListener("click", exportJson);
+
+$("#btnImportJson").addEventListener("click", () => $("#importJsonInput").click());
+$("#importJsonInput").addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (file) importJsonFile(file);
+  e.target.value = "";
+});
+
+$("#btnAddDamage").addEventListener("click", () => openDamageModal(null));
+
+/* -----------------------------
+   Generate PDF
+------------------------------ */
+$("#btnGeneratePdf").addEventListener("click", async () => {
+  // validate step 4 requirements, even if user jumped
+  const err4 = validateStep(4);
+  if (err4){
+    toast("Antes de gerar PDF: " + err4);
+    showStep(4);
+    return;
+  }
+  try{
+    await generatePdf();
+  }catch(e){
+    console.error(e);
+    toast("Falha ao gerar PDF. Tente novamente (ou reduza quantidade de fotos).");
+  }
+});
+
+/* -----------------------------
+   Init
+------------------------------ */
+function init(){
+  // load draft if exists
+  loadDraft();
+
+  // signature pads
+  sigCompanyPad = setupSignature("sigCompany", (data) => state.signatures.company = data);
+  sigClientPad = setupSignature("sigClient", (data) => state.signatures.client = data);
+
+  // build pills
+  buildPills($("#opTypeGroup"), OP_TYPES, () => state.meta.opType, v => state.meta.opType = v);
+  buildPills($("#opMomentGroup"), OP_MOMENTS, () => state.meta.opMoment, v => state.meta.opMoment = v);
+
+  bindInputs();
+  hydrateUIFromState();
+
+  // autosave (extra safety)
+  setInterval(saveDraft, 5000);
+
+  // start at home
+  showStep(0);
+}
+
+init();
+</script>
+</body>
+</html>
+
+
