@@ -215,8 +215,6 @@
     </div>
     <div class="right">
       <button class="btn" id="btnNew">Nova</button>
-      <button class="btn" id="btnExportJson">Exportar JSON</button>
-      <button class="btn" id="btnImportJson">Importar JSON</button>
     </div>
   </div>
   <div class="progress"><div id="progressFill"></div></div>
@@ -476,7 +474,6 @@
       </div>
       <div class="divider"></div>
       <div class="row">
-        <button class="btn" id="btnExportJson2">Exportar JSON</button>
         <button class="btn danger" id="btnResetAll">Nova vistoria (limpar tudo)</button>
       </div>
     </div>
@@ -565,7 +562,6 @@
   </div>
 
   <!-- hidden file input for import -->
-  <input id="importJsonInput" type="file" accept="application/json" class="hidden" />
 </div>
 
 <div class="footerbar">
@@ -604,6 +600,13 @@ const GENERAL_PHOTO_SLOTS = [
   { key:"porta_malas", label:"Porta-malas" }
 ];
 
+  const SETTINGS = {
+  maxDamagePhotos: 4,      // <-- ajuste aqui (ex.: 3, 4, 5)
+  maxGeneralPhotos: 8,     // opcional: limite total de fotos gerais (slots já são 8)
+  photoMaxWidth: 1200,     // reduzir um pouco ajuda no tamanho do PDF
+  photoQuality: 0.70       // reduzir qualidade também ajuda
+};
+  
 function nowAsDatetimeLocal(){
   const d = new Date();
   const pad = n => String(n).padStart(2,"0");
